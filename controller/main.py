@@ -1,6 +1,8 @@
 import copy
 
-from controller.factory import ToolFactory
+from controller.factory.main import CircleFactory, LineFactory, RectangleFactory
+
+# from controller.factory import ToolFactory
 
 # 컨트롤러 (Controller)
 class DrawingController:
@@ -8,22 +10,22 @@ class DrawingController:
         self.model = model
         self.view = view
         self.view.controller = self
-        self.tool = ToolFactory()
-        # self.selected_tool = self.tool.create_tool("select")
-        # self.selected_tool = 
+        self.tool = self.use_tool('line')
         ##LINE
         self.current = None
         self.init_shape = None
         self.init_sbox = None
-        
 
-    #도구창
-    def set_selected_tool(self, tool):
-        # self.selected_tool = self.tool.create_tool(tool)
-        self.selected_tool = tool
-        self.model.tool = tool
-        self.view.update_view()
-        return
+    def use_tool(self,tool_name):
+        if(tool_name == 'line'):
+            factory = LineFactory()
+        if(tool_name == 'rectangle'):
+            factory = RectangleFactory()
+        if(tool_name == 'circle'):
+            factory = CircleFactory()
+        tool = factory.create_tool()
+        return tool
+
     
     ###UTIL
     def calculate_select_box(self):
@@ -79,45 +81,45 @@ class DrawingController:
 
     ####도형 그리기 통합
     def start_draw(self,x,y):
-        if(self.model.tool == 'select'):
-            flag = self.is_in_selected_box(x,y)
-            if(flag == 'select'): #박스 안에 있다면
-                # self.set_shape_property()
-                self.current = 'select'
-            if(flag =='resize'):
-                self.current = 'resize'
-                self.init_sbox = [self.model.selected_box["start"][0:],self.model.selected_box["end"][0:]]
-                self.init_shape = copy.deepcopy(self.model.shapes)
+        # if(self.model.tool == 'select'):
+        #     flag = self.is_in_selected_box(x,y)
+        #     if(flag == 'select'): #박스 안에 있다면
+        #         # self.set_shape_property()
+        #         self.current = 'select'
+        #     if(flag =='resize'):
+        #         self.current = 'resize'
+        #         self.init_sbox = [self.model.selected_box["start"][0:],self.model.selected_box["end"][0:]]
+        #         self.init_shape = copy.deepcopy(self.model.shapes)
 
             
-            if(flag=='none'):
-                target = self.is_selected(x,y) 
-                if(target == -1):
-                    self.current = 'multiselect'
-                    self.model.selected_shapes = []
-                    self.model.select_box = {"type": "select", "start":[x,y]}
-                else:
-                    self.current = 'select'
-                    self.model.selected_shapes = [target]
-                    self.calculate_select_box()
-                    self.view.update_view()
+        #     if(flag=='none'):
+        #         target = self.is_selected(x,y) 
+        #         if(target == -1):
+        #             self.current = 'multiselect'
+        #             self.model.selected_shapes = []
+        #             self.model.select_box = {"type": "select", "start":[x,y]}
+        #         else:
+        #             self.current = 'select'
+        #             self.model.selected_shapes = [target]
+        #             self.calculate_select_box()
+        #             self.view.update_view()
 
-            if(self.current == 'select'): 
-                self.init_shape = copy.deepcopy(self.model.shapes)
-                self.init_mouse = [x,y]
-
+        #     if(self.current == 'select'): 
+        #         self.init_shape = copy.deepcopy(self.model.shapes)
+        #         self.init_mouse = [x,y]
+        self.tool.start_draw(x,y)
 
    
         if(self.model.tool == 'line'):
-            self.model.shapes.append({'type': 'line', 'start':[x,y], 'end':[x,y]})
+            self.model.add_shapes({'type': 'line', 'start':[x,y], 'end':[x,y]})
             self.current = 'line'
 
         if(self.model.tool == 'rectangle'):
-            self.model.shapes.append({'type': 'rectangle', 'start':[x,y], 'end':[x,y]})
+            self.model.add_shapes({'type': 'rectangle', 'start':[x,y], 'end':[x,y]})
             self.current = 'rectangle'
 
         if(self.model.tool == 'circle'):
-            self.model.shapes.append({'type': 'circle', 'start':[x,y], 'end':[x,y]})
+            self.model.add_shapes({'type': 'circle', 'start':[x,y], 'end':[x,y]})
             self.current = 'circle'
 
     def update_draw(self,x,y):
@@ -173,16 +175,13 @@ class DrawingController:
 
 
         if self.current == 'line':
-            self.model.shapes[-1]['end'] = [x,y]
-            self.view.update_view()
+            self.model.update_shapes(-1,[x,y])
 
         if(self.model.tool == 'rectangle'):
-            self.model.shapes[-1]['end']=[x,y]
-            self.view.update_view()
+            self.model.update_shapes(-1,[x,y])
 
         if(self.model.tool == 'circle'):
-            self.model.shapes[-1]['end']=[x,y]
-            self.view.update_view()
+            self.model.update_shapes(-1,[x,y])
 
     def modify_position(self):
         shape = self.model.shapes[-1]
@@ -205,23 +204,21 @@ class DrawingController:
         if self.current == 'line':
             shape = self.model.shapes[-1]
             if (shape['start'] == shape['end']):
-                self.model.shapes.pop()
+                self.model.remove_shapes(-1)
             self.current = None
 
         if(self.model.tool == 'rectangle'):
             shape = self.model.shapes[-1]
             if (shape['start'] == shape['end']):
-                self.model.shapes.pop()
+                self.model.remove_shapes(-1)
             self.modify_position()
             self.current = None
 
         if(self.model.tool == 'circle'):
             shape = self.model.shapes[-1]
             if (shape['start'] == shape['end']):
-                self.model.shapes.pop()
+                self.model.remove_shapes(-1)
             self.modify_position()
-            
-                
             self.current = None
 
 
